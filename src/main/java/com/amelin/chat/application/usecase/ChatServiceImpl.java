@@ -44,7 +44,7 @@ public class ChatServiceImpl implements ChatService {
     @Override
     public Set<UserDto> unregisterUser(UserDto userDto) {
         Optional<User> user = connectedUsers.stream()
-                .filter(e -> !e.getUsername().equals(userDto.getUsername())).findFirst();
+                .filter(e -> e.getUsername().equals(userDto.getUsername())).findFirst();
 
         connectedUsers.remove(user.get());
 
