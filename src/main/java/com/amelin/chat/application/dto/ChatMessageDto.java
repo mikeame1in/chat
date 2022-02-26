@@ -1,25 +1,34 @@
 package com.amelin.chat.application.dto;
 
 public class ChatMessageDto {
-    private final String toWhom;
-    private final String fromWho;
-    private final String message;
+    private String who;
+    private String whom;
+    private String body;
 
-    public ChatMessageDto(String toWhom, String fromWho, String message) {
-        this.toWhom = toWhom;
-        this.fromWho = fromWho;
-        this.message = message;
+    public ChatMessageDto() {
     }
 
-    public String getToWhom() {
-        return toWhom;
+    public String getWho() {
+        return who;
     }
 
-    public String getFromWho() {
-        return fromWho;
+    public void setWho(String who) {
+        this.who = who;
     }
 
-    public String getMessage() {
-        return message;
+    public String getWhom() {
+        return whom;
+    }
+
+    public void setWhom(String whom) {
+        this.whom = whom;
+    }
+
+    public String getBody() {
+        return body;
+    }
+
+    public void setBody(String body) {
+        this.body = body;
     }
 }

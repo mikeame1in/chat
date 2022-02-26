@@ -1,21 +1,18 @@
 package com.amelin.chat.application.dto;
 
-import com.amelin.chat.domain.model.User;
+import java.util.List;
 
 public class ChatRoomDto {
-    private final User first;
-    private final User second;
+    private List<UserDto> users;
 
-    public ChatRoomDto(User first, User second) {
-        this.first = first;
-        this.second = second;
+    public ChatRoomDto() {
     }
 
-    public User getFirst() {
-        return first;
+    public List<UserDto> getUsers() {
+        return users;
     }
 
-    public User getSecond() {
-        return second;
+    public void setUsers(List<UserDto> users) {
+        this.users = users;
     }
 }

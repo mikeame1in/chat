@@ -4,8 +4,7 @@ import com.amelin.chat.application.dto.ChatMessageDto;
 import com.amelin.chat.application.dto.ChatRoomDto;
 import com.amelin.chat.application.dto.UserDto;
 import com.amelin.chat.application.exception.ChatServiceValidator;
-import com.amelin.chat.application.port.in.ChatService;
-import com.amelin.chat.application.port.out.MessageSender;
+import com.amelin.chat.application.port.ChatService;
 import com.amelin.chat.domain.model.ChatMessage;
 import com.amelin.chat.domain.model.ChatRoom;
 import com.amelin.chat.domain.model.User;
@@ -16,20 +15,20 @@ import java.util.*;
 public class ChatServiceImpl implements ChatService {
     private final Set<User> connectedUsers;
     private final Set<ChatRoom> chatRooms;
-//    private final MessageSender messageSender;
     private final ChatServiceValidator chatServiceValidator;
 
     public ChatServiceImpl(ChatServiceValidator chatServiceValidator) {
         this.connectedUsers =
-                new HashSet<>(List.of(new User(1,"user1212"), new User(2,"user2345")));
+                new HashSet<>(List.of(
+                        new User(1,"user1212", ""),
+                        new User(2,"user2345", "")));
         this.chatRooms = new HashSet<>();
         this.chatServiceValidator = chatServiceValidator;
-//        this.messageSender = messageSender;
     }
 
     @Override
     public Set<UserDto> registerUser(UserDto userDto) {
-        User user = new User(UUID.randomUUID().variant(),userDto.getUsername());
+        User user = new User(UUID.randomUUID().variant(),userDto.getUsername(), userDto.getSessionId());
 
         if (chatServiceValidator.isNameUnique(user, connectedUsers)) {
             connectedUsers.add(user);
@@ -43,8 +42,8 @@ public class ChatServiceImpl implements ChatService {
 
     @Override
     public Set<UserDto> unregisterUser(UserDto userDto) {
-        Optional<User> user = connectedUsers.stream()
-                .filter(e -> e.getUsername().equals(userDto.getUsername())).findFirst();
+        String username = userDto.getUsername();
+        Optional<User> user = findUser(username);
 
         connectedUsers.remove(user.get());
 
@@ -52,33 +51,65 @@ public class ChatServiceImpl implements ChatService {
     }
 
     @Override
-    public ChatRoomDto startChat(UserDto firstParticipant, UserDto secondParticipant) {
-        Optional<User> first = connectedUsers.stream()
-                .filter(e -> !e.getUsername().equals(firstParticipant.getUsername())).findFirst();
-        Optional<User> second = connectedUsers.stream()
-                .filter(e -> !e.getUsername().equals(secondParticipant.getUsername())).findFirst();
-
-        ChatRoom chatRoom = new ChatRoom(
-                UUID.randomUUID().variant(),
-                first.get(),
-                second.get());
-
-        chatRooms.add(chatRoom);
-
-        return new ChatRoomDto(chatRoom.getFirst(), chatRoom.getSecond());
+    public ChatRoomDto createChatRoom(String who, String whom) {
+        return null;
     }
 
-//    @Override
-//    public void processMessage(ChatMessageDto message) {
-//        messageSender.sendToUser();
-//    }
+    @Override
+    public ChatMessageDto processMessage(ChatMessageDto messageDto) {
+//        ChatMessage message = transformBack(messageDto);
+//
+//        Optional<ChatRoom> chatRoom = findChatRoom();
+//        Optional<User> who = findUser(message.getWho());
+//        Optional<User> whom = findUser(message.getWhom());
+//
+//        ChatRoom room = null;
+//
+//        if (chatRoom.equals(Optional.empty())) {
+//            room = new ChatRoom(
+//                            UUID.randomUUID().variant(),
+//                            List.of(who.get(), whom.get()));
+//            chatRooms.add(room);
+//        } else {
+//            room = chatRoom.get();
+//        }
+//
+//        room.addMessage(message);
+        Optional<User> who = findUser(messageDto.getWho());
+        Optional<User> whom = findUser(messageDto.getWhom());
+
+        messageDto.setWho(who.get().getSessionId());
+        messageDto.setWhom(whom.get().getSessionId());
+
+        return messageDto;
+    }
 
     private Set<UserDto> transform(Set<User> users) {
-        Set<UserDto> UserDtos = new HashSet<>();
+        Set<UserDto> userDtos = new HashSet<>();
 
         for (User user: users) {
-            UserDtos.add(new UserDto(user.getUsername()));
+            UserDto userDto = new UserDto();
+            userDto.setUsername(user.getUsername());
+            userDto.setSessionId(user.getSessionId());
+            userDtos.add(userDto);
         }
-        return UserDtos;
+
+        return userDtos;
+    }
+
+    private ChatMessage transformBack(ChatMessageDto messageDto) {
+        return new ChatMessage(
+                messageDto.getWho(),
+                messageDto.getWhom(),
+                messageDto.getBody());
+    }
+
+    private Optional<User> findUser(String username) {
+        return connectedUsers.stream()
+                .filter(e -> e.getUsername().equals(username)).findFirst();
+    }
+
+    private Optional<ChatRoom> findChatRoom() {
+        return Optional.empty();
     }
 }

@@ -1,17 +1,27 @@
 package com.amelin.chat.domain.model;
 
-import java.util.Date;
+import java.time.LocalTime;
 
-public class ChatMessage extends AbstractEntity{
-    private String chatId;
-    private String senderId;
-    private String recipientId;
-    private String senderName;
-    private String recipientName;
-    private String content;
-    private Date timestamp;
+public class ChatMessage{
+    private final String who;
+    private final String whom;
+    private final String body;
 
-    public ChatMessage(long id) {
-        super(id);
+    public ChatMessage(String who, String whom, String body) {
+        this.who = who;
+        this.whom = whom;
+        this.body = body;
+    }
+
+    public String getWho() {
+        return who;
+    }
+
+    public String getWhom() {
+        return whom;
+    }
+
+    public String getBody() {
+        return body;
     }
 }

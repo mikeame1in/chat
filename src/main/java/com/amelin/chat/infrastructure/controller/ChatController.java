@@ -1,61 +1,70 @@
 package com.amelin.chat.infrastructure.controller;
 
 import com.amelin.chat.application.dto.ChatMessageDto;
+import com.amelin.chat.application.dto.ChatRoomDto;
 import com.amelin.chat.application.dto.UserDto;
-import com.amelin.chat.application.port.in.ChatService;
-import com.amelin.chat.infrastructure.dto.JsonChatMessageDto;
-import com.amelin.chat.infrastructure.dto.JsonUserDto;
+import com.amelin.chat.application.port.ChatService;
+import com.amelin.chat.infrastructure.dto.ChatRoomCreateMessage;
 import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.handler.annotation.Headers;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.SendTo;
+import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
+import org.springframework.messaging.simp.SimpMessageType;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.messaging.simp.annotation.SendToUser;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.HashSet;
 import java.util.Set;
 
 @RestController
 public class ChatController {
     private final ChatService chatService;
+    private final SimpMessagingTemplate messagingTemplate;
 
-    public ChatController(ChatService chatService) {
+    public ChatController(ChatService chatService, SimpMessagingTemplate messagingTemplate) {
         this.chatService = chatService;
+        this.messagingTemplate = messagingTemplate;
     }
 
     @MessageMapping("/register")
     @ResponseBody
     @SendTo("/topic/users")
-    public ResponseEntity<Set<JsonUserDto>> registerUser(@RequestBody JsonUserDto user){
-        Set<UserDto> connectedUsers =
-                chatService.registerUser(new UserDto(user.getUsername()));
+    public ResponseEntity<Set<UserDto>> registerUser(@RequestBody UserDto user,
+                                                     SimpMessageHeaderAccessor headerAccessor) {
+        String sessionId = headerAccessor.getSessionId();
+        user.setSessionId(sessionId);
 
-        return ResponseEntity.ok(transform(connectedUsers));
+        Set<UserDto> connectedUsers =
+                chatService.registerUser(user);
+
+        return ResponseEntity.ok(connectedUsers);
     }
 
     @MessageMapping("/unregister")
     @ResponseBody
     @SendTo("/topic/users")
-    public ResponseEntity<Set<JsonUserDto>> unregisterUser(@RequestBody JsonUserDto user){
+    public ResponseEntity<Set<UserDto>> unregisterUser(@RequestBody UserDto user) {
         Set<UserDto> connectedUsers =
-                chatService.unregisterUser(new UserDto(user.getUsername()));
+                chatService.unregisterUser(user);
 
-        return ResponseEntity.ok(transform(connectedUsers));
+        return ResponseEntity.ok(connectedUsers);
     }
 
-//    @MessageMapping("/message")
-//    public void processMessage(JsonChatMessageDto message){
-//        chatService.processMessage(new ChatMessageDto(message.getToWhom(), message.getFromWho(), message.getMessage()));
-//    }
+    @MessageMapping("/message")
+    public void handleMessage(ChatMessageDto message){
+        ChatMessageDto messageDto = chatService.processMessage(message);
 
-    private Set<JsonUserDto> transform(Set<UserDto> userDtos) {
-        Set<JsonUserDto> jsonUserDtos = new HashSet<>();
+        SimpMessageHeaderAccessor headerAccessor = SimpMessageHeaderAccessor.create(SimpMessageType.MESSAGE);
+        headerAccessor.setSessionId(messageDto.getWhom());
+        headerAccessor.setLeaveMutable(true);
 
-        for (UserDto cUser: userDtos) {
-            JsonUserDto jsonUserDto = new JsonUserDto();
-            jsonUserDto.setUsername(cUser.getUsername());
-            jsonUserDtos.add(jsonUserDto);
-        }
-        return jsonUserDtos;
+        messagingTemplate.convertAndSendToUser(
+                messageDto.getWhom(),
+                "/queue/chatroom",
+                messageDto,
+                headerAccessor.getMessageHeaders());
     }
 }
