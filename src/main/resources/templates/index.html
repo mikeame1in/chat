@@ -49,10 +49,30 @@
                     <ul id="chatroom_list"></ul>
                 </div>
             </div>
+            <div class="row">
+                <div class="col">
+                    <div id="chat_window" class="container">
+                        <div class="row text-center"><h3>Chat</h3></div>
+                        <div class="label"></div>
+                        <div  id="chat_output"
+                                style="height:200px;
+                                width:300px;
+                                border:1px solid #4e4e4e;
+                                font:16px Arial, Serif;
+                                overflow:auto">
+
+                        </div>
+                        <div class="col"><textarea id="chat_input"></textarea></div>
+                        <input type="button" class="btn-default" id="send" value="send"/>
+                    </div>
+                </div>
+                <div class="col"></div>
+                <div class="col"></div>
+            </div>
         </div>
 
 
-        <div id="chat_window"></div>
+
 
         <div id="alerts"></div>
 </body>

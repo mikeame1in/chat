@@ -4,6 +4,7 @@ import com.amelin.chat.application.dto.ChatMessageDto;
 import com.amelin.chat.application.dto.ChatRoomDto;
 import com.amelin.chat.application.dto.UserDto;
 
+import java.util.List;
 import java.util.Set;
 
 public interface ChatService {

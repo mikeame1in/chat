@@ -11,6 +11,7 @@ import com.amelin.chat.domain.model.User;
 import com.amelin.chat.domain.exception.business.ValidationException;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class ChatServiceImpl implements ChatService {
     private final Set<User> connectedUsers;
@@ -52,50 +53,78 @@ public class ChatServiceImpl implements ChatService {
 
     @Override
     public ChatRoomDto createChatRoom(String who, String whom) {
-        return null;
+        Optional<User> whoUser = findUser(who);
+        Optional<User> whomUser = findUser(whom);
+
+        List<User> users = new ArrayList<>();
+        users.add(whoUser.get());
+        users.add(whomUser.get());
+
+        ChatRoom chatRoom = new ChatRoom(UUID.randomUUID().variant(), users);
+
+        chatRooms.add(chatRoom);
+
+        return transform(chatRoom, whomUser.get().getUsername());
     }
 
     @Override
     public ChatMessageDto processMessage(ChatMessageDto messageDto) {
-//        ChatMessage message = transformBack(messageDto);
-//
-//        Optional<ChatRoom> chatRoom = findChatRoom();
-//        Optional<User> who = findUser(message.getWho());
-//        Optional<User> whom = findUser(message.getWhom());
-//
-//        ChatRoom room = null;
-//
-//        if (chatRoom.equals(Optional.empty())) {
-//            room = new ChatRoom(
-//                            UUID.randomUUID().variant(),
-//                            List.of(who.get(), whom.get()));
-//            chatRooms.add(room);
-//        } else {
-//            room = chatRoom.get();
-//        }
-//
-//        room.addMessage(message);
         Optional<User> who = findUser(messageDto.getWho());
         Optional<User> whom = findUser(messageDto.getWhom());
 
-        messageDto.setWho(who.get().getSessionId());
-        messageDto.setWhom(whom.get().getSessionId());
+        ChatRoom chatRoom = findChatRoomById(messageDto.getChatroomId()).get();
+
+        chatRoom.addMessage(transformBack(messageDto));
+        chatRooms.add(chatRoom);
 
         return messageDto;
     }
+
+//    public ChatRoomDto getChatRoom(long chatroomId) {
+//        return transform(findChatRoomById(chatroomId).get());
+//    }
 
     private Set<UserDto> transform(Set<User> users) {
         Set<UserDto> userDtos = new HashSet<>();
 
         for (User user: users) {
-            UserDto userDto = new UserDto();
-            userDto.setUsername(user.getUsername());
-            userDto.setSessionId(user.getSessionId());
+            UserDto userDto = transform(user);
             userDtos.add(userDto);
         }
 
         return userDtos;
     }
+
+    private UserDto transform(User user) {
+        UserDto userDto = new UserDto();
+        userDto.setUsername(user.getUsername());
+        userDto.setSessionId(user.getSessionId());
+
+        return userDto;
+    }
+
+    private ChatRoomDto transform(ChatRoom chatRoom, String whom) {
+        ChatRoomDto chatRoomDto = new ChatRoomDto();
+        chatRoomDto.setChatroomId(chatRoom.getId());
+
+        List<UserDto> users =
+                chatRoom.getUsers().stream().map((user) -> transform(user)).collect(Collectors.toList());
+
+        chatRoomDto.setWithWhom(whom);
+
+        return chatRoomDto;
+    }
+
+//    private List<ChatRoomDto> transform(List<ChatRoom> chatRooms) {
+//        List<ChatRoomDto> roomDtos = new ArrayList<>();
+//
+//        for (ChatRoom chatRoom: chatRooms) {
+//            ChatRoomDto chatRoomDto = new ChatRoomDto();
+//            chatRoomDto.setChatroomId(chatRoomDto.getChatroomId());
+//        }
+//
+//        chatRooms.stream().map(e -> roomDtos.add(new ChatRoomDto()));
+//    }
 
     private ChatMessage transformBack(ChatMessageDto messageDto) {
         return new ChatMessage(
@@ -109,7 +138,11 @@ public class ChatServiceImpl implements ChatService {
                 .filter(e -> e.getUsername().equals(username)).findFirst();
     }
 
-    private Optional<ChatRoom> findChatRoom() {
-        return Optional.empty();
+    private Optional<ChatRoom> findChatRoomById(long chatroomId) {
+        return chatRooms.stream().filter(e -> e.getId() == chatroomId).findFirst();
+    }
+
+    private List<ChatRoom> findAllChatRoomsByUser(User user) {
+        return chatRooms.stream().filter(chatRoom -> chatRoom.isUserHere(user)).collect(Collectors.toList());
     }
 }

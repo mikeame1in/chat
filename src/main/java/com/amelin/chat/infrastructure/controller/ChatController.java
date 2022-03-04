@@ -4,19 +4,19 @@ import com.amelin.chat.application.dto.ChatMessageDto;
 import com.amelin.chat.application.dto.ChatRoomDto;
 import com.amelin.chat.application.dto.UserDto;
 import com.amelin.chat.application.port.ChatService;
-import com.amelin.chat.infrastructure.dto.ChatRoomCreateMessage;
+import com.amelin.chat.infrastructure.dto.NewChatRoomClaim;
 import org.springframework.http.ResponseEntity;
-import org.springframework.messaging.handler.annotation.Headers;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.messaging.simp.SimpMessageType;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
-import org.springframework.messaging.simp.annotation.SendToUser;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Collections;
+import java.util.Map;
 import java.util.Set;
 
 @RestController
@@ -53,18 +53,39 @@ public class ChatController {
         return ResponseEntity.ok(connectedUsers);
     }
 
-    @MessageMapping("/message")
-    public void handleMessage(ChatMessageDto message){
-        ChatMessageDto messageDto = chatService.processMessage(message);
+    @MessageMapping("/create_chatroom")
+    public void createChatroom(@RequestBody NewChatRoomClaim claim) {
+        ChatRoomDto chatRoomDto = chatService.createChatRoom(claim.getWho(), claim.getWithWhom());
 
-        SimpMessageHeaderAccessor headerAccessor = SimpMessageHeaderAccessor.create(SimpMessageType.MESSAGE);
-        headerAccessor.setSessionId(messageDto.getWhom());
-        headerAccessor.setLeaveMutable(true);
+        chatRoomDto.setWhomSessionId(claim.getWhomSessionId());
+
+        messagingTemplate.convertAndSendToUser(
+                claim.getWhoSessionId(),
+                "/queue/chatroom_list",
+                chatRoomDto,
+                createHeaders(claim.getWhoSessionId()));
+    }
+
+    @MessageMapping("/message")
+    public void processMessage(ChatMessageDto message){
+        ChatMessageDto messageDto = chatService.processMessage(message);
 
         messagingTemplate.convertAndSendToUser(
                 messageDto.getWhom(),
-                "/queue/chatroom",
+                "/queue/chatroom/message",
                 messageDto,
-                headerAccessor.getMessageHeaders());
+                createHeaders(messageDto.getWhom()));
+    }
+
+    @MessageMapping("/chatroom")
+    public void findChatroom(@RequestBody UserDto user, String chatroomId) {
+
+    }
+
+    private Map<String, Object> createHeaders(String sessionId) {
+        SimpMessageHeaderAccessor headerAccessor = SimpMessageHeaderAccessor.create();
+        headerAccessor.setSessionId(sessionId);
+
+        return headerAccessor.getMessageHeaders();
     }
 }
