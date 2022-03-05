@@ -11,7 +11,6 @@ function setConnected(connected) {
     else {
         $("#chat_users").hide();
     }
-    // $("#greetings").html("");
 }
 
 function showChatRoomList(chatRoom) {
@@ -20,38 +19,40 @@ function showChatRoomList(chatRoom) {
 
     // if (chatroom == null) {
         $("#chatroom_list").append(`
-                <li id="user_${chatRoom['whomSessionId']}">
+                <li id="chatRoom_${chatRoom['chatroomId']}">
                     ${chatRoom['withWhom']}
                 </li>`)
     // }
+
+    $(`#chatRoom_${chatRoom['chatroomId']}`).click(() => {
+        var chatRoomClaim = JSON.stringify({
+            'chatroomId': chatRoom['chatroomId'],
+            'who': username,
+            'whoSessionId': sessionId,
+            'whomSessionId': chatRoom['whomSessionId']
+        });
+
+        stompClient.send('/app/chatroom', {}, chatRoomClaim);
+    })
 }
 
-function showChatRoom(who, whom, messages){
-    $("#chat_window").html('');
-    $(".label").html('');
-    $(".label").append(`whom: ${whom}`);
+function showChatRoom(chatRoom){
+    $("#chatroom_window_whom").html('');
+    $("#chatroom_window_output").html('');
+    $("#chatroom_window_input").html('');
 
-    // messages.forEach(message => {
-    //     $("#chat_output").html('');
-    //     $("#chat_output").append(`<p>${message}</p>`)
+    $("#chatroom_window_whom").append(`whom: ${chatRoom['withWhom']}`);
+
+    // var messages = chatRoom['messages'];
+    //
+    // // for(var message: messages) {
+    // //
+    // // }
+    //
+    // messages.entries.forEach(message => {
+    //     $("#chatroom_window_output").append(`<p>${message['body']}</p>`)
     // });
 }
-
-// function startChat(who, whom) {
-//
-//     // showChatRoom(who, whom);
-//
-//     var message = JSON.stringify(
-//         {
-//             'who': who,
-//             'whom': whom,
-//             'body': 'hello!'
-//         });
-//
-//     stompClient.send('/app/message', {}, message);
-// }
-
-
 
 function showConnectedUsers(users) {
     $("#chat_users").html('');
@@ -93,6 +94,9 @@ function connect() {
         });
         stompClient.subscribe('/user/queue/chatroom_list', function (event) {
             showChatRoomList(JSON.parse(event.body));
+        });
+        stompClient.subscribe('/user/queue/chatroom', function (chatRoom) {
+            showChatRoom(chatRoom);
         });
         stompClient.send('/app/register', {}, message);
     });

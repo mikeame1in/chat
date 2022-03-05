@@ -11,5 +11,6 @@ public interface ChatService {
     Set<UserDto> registerUser(UserDto userDto);
     Set<UserDto> unregisterUser(UserDto userDto);
     ChatRoomDto createChatRoom(String who, String whom);
+    ChatRoomDto getChatRoom(long chatroomId, String who);
     ChatMessageDto processMessage(ChatMessageDto message);
 }

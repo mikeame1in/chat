@@ -64,25 +64,26 @@ public class ChatServiceImpl implements ChatService {
 
         chatRooms.add(chatRoom);
 
-        return transform(chatRoom, whomUser.get().getUsername());
+        return transform(chatRoom, whoUser.get().getUsername());
+    }
+
+    @Override
+    public ChatRoomDto getChatRoom(long chatroomId, String who) {
+        return transform(findChatRoomById(chatroomId).get(), who);
     }
 
     @Override
     public ChatMessageDto processMessage(ChatMessageDto messageDto) {
-        Optional<User> who = findUser(messageDto.getWho());
-        Optional<User> whom = findUser(messageDto.getWhom());
+//        Optional<User> who = findUser(messageDto.getWho());
+//        Optional<User> whom = findUser(messageDto.getWhom());
+//
+//        ChatRoom chatRoom = findChatRoomById(messageDto.getChatroomId()).get();
 
-        ChatRoom chatRoom = findChatRoomById(messageDto.getChatroomId()).get();
-
-        chatRoom.addMessage(transformBack(messageDto));
-        chatRooms.add(chatRoom);
+//        chatRoom.addMessage(transformBack(messageDto));
+//        chatRooms.add(chatRoom);
 
         return messageDto;
     }
-
-//    public ChatRoomDto getChatRoom(long chatroomId) {
-//        return transform(findChatRoomById(chatroomId).get());
-//    }
 
     private Set<UserDto> transform(Set<User> users) {
         Set<UserDto> userDtos = new HashSet<>();
@@ -103,14 +104,27 @@ public class ChatServiceImpl implements ChatService {
         return userDto;
     }
 
-    private ChatRoomDto transform(ChatRoom chatRoom, String whom) {
+    private ChatMessageDto transform(ChatMessage message) {
+        ChatMessageDto messageDto = new ChatMessageDto();
+        messageDto.setBody(message.getBody());
+
+        return messageDto;
+    }
+
+    private List<ChatMessageDto> transform(List<ChatMessage> messages) {
+        return messages.stream().map(message -> transform(message)).collect(Collectors.toList());
+    }
+
+    private ChatRoomDto transform(ChatRoom chatRoom, String who) {
         ChatRoomDto chatRoomDto = new ChatRoomDto();
         chatRoomDto.setChatroomId(chatRoom.getId());
 
-        List<UserDto> users =
-                chatRoom.getUsers().stream().map((user) -> transform(user)).collect(Collectors.toList());
+        List<User> users = chatRoom.getUsers();
+        String whom = users.stream().filter(u -> !u.getUsername().equals(who)).findFirst().get().getUsername();
 
+        chatRoomDto.setWho(who);
         chatRoomDto.setWithWhom(whom);
+        chatRoomDto.setMessages(transform(chatRoom.getMessages()));
 
         return chatRoomDto;
     }
@@ -126,12 +140,12 @@ public class ChatServiceImpl implements ChatService {
 //        chatRooms.stream().map(e -> roomDtos.add(new ChatRoomDto()));
 //    }
 
-    private ChatMessage transformBack(ChatMessageDto messageDto) {
-        return new ChatMessage(
-                messageDto.getWho(),
-                messageDto.getWhom(),
-                messageDto.getBody());
-    }
+//    private ChatMessage transformBack(ChatMessageDto messageDto) {
+//        return new ChatMessage(
+//                messageDto.getWho(),
+//                messageDto.getWhom(),
+//                messageDto.getBody());
+//    }
 
     private Optional<User> findUser(String username) {
         return connectedUsers.stream()
