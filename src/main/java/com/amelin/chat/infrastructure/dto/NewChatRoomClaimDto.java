@@ -1,20 +1,12 @@
-package com.amelin.chat.infrastructure.dto.in;
+package com.amelin.chat.infrastructure.dto;
 
-public class ChatRoomClaimDto {
-    private long chatroomId;
+public class NewChatRoomClaimDto {
     private String who;
     private String whoSessionId;
+    private String withWhom;
     private String whomSessionId;
 
-    public ChatRoomClaimDto() {
-    }
-
-    public long getChatroomId() {
-        return chatroomId;
-    }
-
-    public void setChatroomId(long chatroomId) {
-        this.chatroomId = chatroomId;
+    public NewChatRoomClaimDto() {
     }
 
     public String getWho() {
@@ -23,6 +15,14 @@ public class ChatRoomClaimDto {
 
     public void setWho(String who) {
         this.who = who;
+    }
+
+    public String getWithWhom() {
+        return withWhom;
+    }
+
+    public void setWithWhom(String withWhom) {
+        this.withWhom = withWhom;
     }
 
     public String getWhoSessionId() {

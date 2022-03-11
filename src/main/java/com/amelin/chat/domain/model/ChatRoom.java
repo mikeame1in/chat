@@ -15,17 +15,14 @@ public class ChatRoom extends AbstractEntity {
     public List<User> getUsers() {
         return users;
     }
-
     public List<ChatMessage> getMessages() {
         return messages;
     }
 
-    public void addMessage(ChatMessage message) {
+    public ChatMessage processMessage(ChatMessage message) {
         messages.add(message);
-    }
 
-    public Optional<User> getWhomCompanion(User who) {
-        return users.stream().filter(u -> !u.getUsername().equals(who.getUsername())).findFirst();
+        return message;
     }
 
     public boolean isUserHere(User user) {

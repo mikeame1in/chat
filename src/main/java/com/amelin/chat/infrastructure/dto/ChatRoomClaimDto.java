@@ -1,18 +1,12 @@
-package com.amelin.chat.infrastructure.dto.out;
+package com.amelin.chat.infrastructure.dto;
 
-import com.amelin.chat.application.dto.ChatMessageDto;
-
-import java.util.List;
-
-public class WsChatRoomDto {
+public class ChatRoomClaimDto {
     private long chatroomId;
     private String who;
     private String whoSessionId;
-    private String withWhom;
     private String whomSessionId;
-    private List<ChatMessageDto> messages;
 
-    public WsChatRoomDto() {
+    public ChatRoomClaimDto() {
     }
 
     public long getChatroomId() {
@@ -39,27 +33,11 @@ public class WsChatRoomDto {
         this.whoSessionId = whoSessionId;
     }
 
-    public String getWithWhom() {
-        return withWhom;
-    }
-
-    public void setWithWhom(String withWhom) {
-        this.withWhom = withWhom;
-    }
-
     public String getWhomSessionId() {
         return whomSessionId;
     }
 
     public void setWhomSessionId(String whomSessionId) {
         this.whomSessionId = whomSessionId;
-    }
-
-    public List<ChatMessageDto> getMessages() {
-        return messages;
-    }
-
-    public void setMessages(List<ChatMessageDto> messages) {
-        this.messages = messages;
     }
 }

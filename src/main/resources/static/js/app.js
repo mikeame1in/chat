@@ -13,23 +13,44 @@ function setConnected(connected) {
     }
 }
 
-function showChatRoomList(chatRoom) {
+function addChatRoom(event) {
+    var chatroom = document.createElement('li');
+    chatroom.id = `chatRoom_${event['chatroomId']}`;
+    chatroom.textContent = `${event['whom']}`;
 
-    // var chatroom = $("#chatroom_list").find(`#user_${whom['whomSessionId']}`)
+    var eventWindow = document.createElement('div');
+    eventWindow.id = `event_window_${event['chatroomId']}`;
+    eventWindow.textContent = `${event['eventType']}`;
 
-    // if (chatroom == null) {
-        $("#chatroom_list").append(`
-                <li id="chatRoom_${chatRoom['chatroomId']}">
-                    ${chatRoom['withWhom']}
-                </li>`)
-    // }
+    chatroom.appendChild(eventWindow);
 
-    $(`#chatRoom_${chatRoom['chatroomId']}`).click(() => {
+    const chatroomList = document.querySelector('#chatroom_list');
+    chatroomList.appendChild(chatroom);
+}
+
+function showChatRoomList(event) {
+    if (event['eventType'] == "CREATE") {
+        addChatRoom(event);
+    }
+    if (event['eventType'] == "NEW_MESSAGE") {
+        var chatroom = document
+            .querySelector(`#chatRoom_${event['chatroomId']}`);
+
+        if (chatroom != null) {
+            var eventWindow = chatroom.querySelector(`#event_window_${event['chatroomId']}`);
+            eventWindow.textContent = `${event['eventType']}`;
+        }
+        else {
+            addChatRoom(event);
+        }
+    }
+
+    $(`#chatRoom_${event['chatroomId']}`).click(() => {
         var chatRoomClaim = JSON.stringify({
-            'chatroomId': chatRoom['chatroomId'],
+            'chatroomId': event['chatroomId'],
             'who': username,
             'whoSessionId': sessionId,
-            'whomSessionId': chatRoom['whomSessionId']
+            'whomSessionId': event['whomSessionId']
         });
 
         stompClient.send('/app/chatroom', {}, chatRoomClaim);
@@ -41,7 +62,9 @@ function showChatRoom(chatRoom){
     $("#chatroom_window_output").html('');
     $("#chatroom_window_input").html('');
 
-    $("#chatroom_window_whom").append(`whom: ${chatRoom['withWhom']}`);
+    var withWhom = chatRoom['withWhom'];
+
+    $("#chatroom_window_whom").append(`whom: ${withWhom}`);
 
     // var messages = chatRoom['messages'];
     //
@@ -52,6 +75,19 @@ function showChatRoom(chatRoom){
     // messages.entries.forEach(message => {
     //     $("#chatroom_window_output").append(`<p>${message['body']}</p>`)
     // });
+
+    $("#send").click(() => {
+        var message = JSON.stringify({
+            'chatroomId': chatRoom['chatroomId'],
+            'who': chatRoom['who'],
+            'whoSessionId': chatRoom['whoSessionId'],
+            'withWhom': chatRoom['withWhom'],
+            'whomSessionId': chatRoom['whomSessionId'],
+            'body': $("#chatroom_window_input").val()
+        });
+
+        stompClient.send('/app/message', {}, message);
+    })
 }
 
 function showConnectedUsers(users) {
@@ -96,7 +132,7 @@ function connect() {
             showChatRoomList(JSON.parse(event.body));
         });
         stompClient.subscribe('/user/queue/chatroom', function (chatRoom) {
-            showChatRoom(chatRoom);
+            showChatRoom(JSON.parse(chatRoom.body));
         });
         stompClient.send('/app/register', {}, message);
     });

@@ -1,8 +1,6 @@
 package com.amelin.chat.application.usecase;
 
-import com.amelin.chat.application.dto.ChatMessageDto;
-import com.amelin.chat.application.dto.ChatRoomDto;
-import com.amelin.chat.application.dto.UserDto;
+import com.amelin.chat.application.dto.*;
 import com.amelin.chat.application.exception.ChatServiceValidator;
 import com.amelin.chat.application.port.ChatService;
 import com.amelin.chat.domain.model.ChatMessage;
@@ -52,7 +50,7 @@ public class ChatServiceImpl implements ChatService {
     }
 
     @Override
-    public ChatRoomDto createChatRoom(String who, String whom) {
+    public ChatEventDto createChatRoom(String who, String whom) {
         Optional<User> whoUser = findUser(who);
         Optional<User> whomUser = findUser(whom);
 
@@ -64,7 +62,7 @@ public class ChatServiceImpl implements ChatService {
 
         chatRooms.add(chatRoom);
 
-        return transform(chatRoom, whoUser.get().getUsername());
+        return createEvent(chatRoom.getId(), whom, EventType.CREATE);
     }
 
     @Override
@@ -73,16 +71,11 @@ public class ChatServiceImpl implements ChatService {
     }
 
     @Override
-    public ChatMessageDto processMessage(ChatMessageDto messageDto) {
-//        Optional<User> who = findUser(messageDto.getWho());
-//        Optional<User> whom = findUser(messageDto.getWhom());
-//
-//        ChatRoom chatRoom = findChatRoomById(messageDto.getChatroomId()).get();
+    public ChatEventDto processMessage(long chatRoomId, String whom, String body) {
+        ChatRoom chatRoom = findChatRoomById(chatRoomId).get();
+        chatRoom.processMessage(new ChatMessage(body));
 
-//        chatRoom.addMessage(transformBack(messageDto));
-//        chatRooms.add(chatRoom);
-
-        return messageDto;
+        return createEvent(chatRoom.getId(), whom, EventType.NEW_MESSAGE);
     }
 
     private Set<UserDto> transform(Set<User> users) {
@@ -140,13 +133,6 @@ public class ChatServiceImpl implements ChatService {
 //        chatRooms.stream().map(e -> roomDtos.add(new ChatRoomDto()));
 //    }
 
-//    private ChatMessage transformBack(ChatMessageDto messageDto) {
-//        return new ChatMessage(
-//                messageDto.getWho(),
-//                messageDto.getWhom(),
-//                messageDto.getBody());
-//    }
-
     private Optional<User> findUser(String username) {
         return connectedUsers.stream()
                 .filter(e -> e.getUsername().equals(username)).findFirst();
@@ -158,5 +144,14 @@ public class ChatServiceImpl implements ChatService {
 
     private List<ChatRoom> findAllChatRoomsByUser(User user) {
         return chatRooms.stream().filter(chatRoom -> chatRoom.isUserHere(user)).collect(Collectors.toList());
+    }
+
+    private ChatEventDto createEvent(long chatRoomId, String whom, EventType eventType) {
+        ChatEventDto eventDto = new ChatEventDto();
+        eventDto.setChatroomId(chatRoomId);
+        eventDto.setWhom(whom);
+        eventDto.setEventType(eventType);
+
+        return eventDto;
     }
 }

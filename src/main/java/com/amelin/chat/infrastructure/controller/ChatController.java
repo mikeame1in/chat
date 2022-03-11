@@ -1,12 +1,10 @@
 package com.amelin.chat.infrastructure.controller;
 
-import com.amelin.chat.application.dto.ChatMessageDto;
+import com.amelin.chat.application.dto.ChatEventDto;
 import com.amelin.chat.application.dto.ChatRoomDto;
 import com.amelin.chat.application.dto.UserDto;
 import com.amelin.chat.application.port.ChatService;
-import com.amelin.chat.infrastructure.dto.in.ChatRoomClaimDto;
-import com.amelin.chat.infrastructure.dto.in.NewChatRoomClaimDto;
-import com.amelin.chat.infrastructure.dto.out.WsChatRoomDto;
+import com.amelin.chat.infrastructure.dto.*;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.SendTo;
@@ -55,13 +53,13 @@ public class ChatController {
 
     @MessageMapping("/create_chatroom")
     public void createChatroom(@RequestBody NewChatRoomClaimDto claim) {
-        ChatRoomDto chatRoomDto = chatService.createChatRoom(claim.getWho(), claim.getWithWhom());
-        WsChatRoomDto wsChatRoomDto = transform(chatRoomDto, claim.getWhoSessionId(), claim.getWhomSessionId());
+        ChatEventDto event = chatService.createChatRoom(claim.getWho(), claim.getWithWhom());
+        WsChatEventDto wsChatEventDto = transform(event, claim.getWhomSessionId());
 
         messagingTemplate.convertAndSendToUser(
                 claim.getWhoSessionId(),
                 "/queue/chatroom_list",
-                wsChatRoomDto,
+                wsChatEventDto,
                 createHeaders(claim.getWhoSessionId()));
     }
 
@@ -78,14 +76,18 @@ public class ChatController {
     }
 
     @MessageMapping("/message")
-    public void processMessage(ChatMessageDto message){
-        ChatMessageDto messageDto = chatService.processMessage(message);
+    public void processMessage(@RequestBody WsChatMessageDto message){
+        ChatEventDto event = chatService.processMessage(
+                message.getChatroomId(),
+                message.getWho(),
+                message.getBody());
+        WsChatEventDto wsChatEventDto = transform(event, message.getWhoSessionId());
 
-//        messagingTemplate.convertAndSendToUser(
-//                messageDto.getWhom(),
-//                "/queue/chatroom/message",
-//                messageDto,
-//                createHeaders(messageDto.getWhom()));
+        messagingTemplate.convertAndSendToUser(
+                message.getWhomSessionId(),
+                "/queue/chatroom_list",
+                wsChatEventDto,
+                createHeaders(message.getWhomSessionId()));
     }
 
     private Map<String, Object> createHeaders(String sessionId) {
@@ -105,5 +107,15 @@ public class ChatController {
         chatRoomDto.setMessages(dto.getMessages());
 
         return chatRoomDto;
+    }
+
+    private WsChatEventDto transform(ChatEventDto eventDto, String whomSessionId) {
+        WsChatEventDto chatEventDto = new WsChatEventDto();
+        chatEventDto.setChatroomId(eventDto.getChatroomId());
+        chatEventDto.setWhom(eventDto.getWhom());
+        chatEventDto.setWhomSessionId(whomSessionId);
+        chatEventDto.setEventType(eventDto.getEventType());
+
+        return chatEventDto;
     }
 }
